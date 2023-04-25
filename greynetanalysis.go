@@ -1,6 +1,8 @@
 package greynetanalysis
 
 import (
+	"strings"
+
 	"github.com/CAIDA/goiputils"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
@@ -46,7 +48,8 @@ func AnnotatePacket(p gopacket.Packet, cnt int, pfx2asn goiputils.IPHandler, mmg
 				} else {
 					pckan.MaxmindCountry = "??"
 				}
-				pckan.KnownScanner = ks.Check(iph.SrcIP, pckan.HostName)
+
+				pckan.KnownScanner = strings.Join(ks.Check(iph.SrcIP, pckan.HostName, p.Metadata().Timestamp), "|")
 				return pckan
 			}
 		}

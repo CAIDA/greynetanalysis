@@ -27,7 +27,7 @@ func main() {
 	}
 	var mmgeo, naqgeo goiputils.IPMetaProvider
 	var pfx2asn goiputils.IPHandler
-	var knownscan *greynetanalysis.KnownScanners
+	var known *greynetanalysis.KnownScanners
 	ctx := context.Background()
 	cnt := 1
 	var wg sync.WaitGroup
@@ -42,12 +42,17 @@ func main() {
 				log.Println("completed loading maxmind")
 				naqgeo = goiputils.NewNetacqCAIDA(ctx, ci.Timestamp)
 				log.Println("completed loading netacq")
-				knownscan = greynetanalysis.LoadKnownScanners("knownscanner.yaml")
+				known = greynetanalysis.NewKnownScanners()
+				known.AddSource("knownscanner.yaml", "other")
+				known.AddSource("mcscanner.yaml", "other")
+				known.AddSource("data/gn.yaml", "timed")
+				known.AddSource("data/alienvault.csv", "csv")
+
 			}
 			pkt := gopacket.NewPacket(data, layers.LayerTypeEthernet, gopacket.NoCopy)
 			wg.Add(1)
 			go func(pkt gopacket.Packet, cnt int) {
-				annotation := greynetanalysis.AnnotatePacket(pkt, cnt, pfx2asn, mmgeo, naqgeo, knownscan)
+				annotation := greynetanalysis.AnnotatePacket(pkt, cnt, pfx2asn, mmgeo, naqgeo, known)
 				fmt.Println(annotation)
 				wg.Done()
 			}(pkt, cnt)
