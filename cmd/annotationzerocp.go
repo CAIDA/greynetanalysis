@@ -6,7 +6,6 @@ import (
 	"greynetanalysis"
 	"log"
 	"os"
-	"sync"
 	"time"
 
 	"github.com/CAIDA/goiputils"
@@ -32,11 +31,11 @@ func main() {
 	annotations := make([]*greynetanalysis.PacketAnnotation, 0, 0)
 	ctx := context.Background()
 	cnt := 1
-	var wg sync.WaitGroup
+	//	var wg sync.WaitGroup
 	starttime := time.Now()
 	fmt.Println("start:", starttime)
 	for {
-		data, ci, err := pcapreader.ReadPacketData()
+		data, ci, err := pcapreader.ZeroCopyReadPacketData()
 		if err == nil {
 			if cnt == 1 {
 				log.Println("initialzing")
@@ -54,19 +53,19 @@ func main() {
 
 			}
 			pkt := gopacket.NewPacket(data, layers.LayerTypeEthernet, gopacket.NoCopy)
-			wg.Add(1)
-			go func(pkt gopacket.Packet, cnt int) {
-				annotations = append(annotations, greynetanalysis.AnnotatePacket(pkt, cnt, pfx2asn, mmgeo, naqgeo, known))
-				//				fmt.Println(annotation)
-				wg.Done()
-			}(pkt, cnt)
+			//			wg.Add(1)
+			//			go func(pkt gopacket.Packet, cnt int) {
+			annotations = append(annotations, greynetanalysis.AnnotatePacket(pkt, cnt, pfx2asn, mmgeo, naqgeo, known))
+			//				fmt.Println(annotation)
+			//				wg.Done()
+			//			}(pkt, cnt)
 			cnt += 1
 			//			fmt.Println("zmap:", greynetanalysis.IsZmap(pkt), "masscan:", greynetanalysis.IsMasscan(pkt), "mirai:", greynetanalysis.IsMirai(pkt))
 		} else {
 			break
 		}
 	}
-	wg.Wait()
+	//	wg.Wait()
 	endtime := time.Now()
 	fmt.Println("annotated", len(annotations))
 	fmt.Println("end:", endtime, "duration:", endtime.Sub(starttime))
