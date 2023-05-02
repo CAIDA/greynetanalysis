@@ -34,23 +34,23 @@ func main() {
 	ks.AddSource("data/gn.yaml", "timed")
 	ks.AddSource("data/alienvault.csv", "csv")
 	var startstr, endstr string
-	flag.StringVar(&startstr, "start", "2023-3-27", "start date")
-	flag.StringVar(&endstr, "end", "2023-4-3", "end date")
+	flag.StringVar(&startstr, "start", "2023-03-27", "start date")
+	flag.StringVar(&endstr, "end", "2023-04-03", "end date")
 	flag.Parse()
 	timeformat := "2006-01-02"
 	startts, err := time.Parse(timeformat, startstr)
-	if err := !nil {
+	if err != nil {
 		log.Fatal("date format incorrect")
 	}
 	endts, err := time.Parse(timeformat, endstr)
-	if err := !nil {
+	if err != nil {
 		log.Fatal("date format incorrect")
 	}
 	for cdate := startts; cdate.Before(endts); cdate = cdate.AddDate(0, 0, 1) {
 		curipinfo := &IPInfo{}
 		//just use latest
 		curipinfo.CurDate = cdate
-		log.Println("loading latest data structure")
+		log.Println("loading latest data structure", cdate)
 		curipinfo.Pfx2asn = goiputils.NewIPHandlerbyDate(curipinfo.CurDate)
 		curipinfo.Mmgeo = goiputils.NewMaxmindCAIDA(ctx, curipinfo.CurDate, "en")
 		curipinfo.Naqgeo = goiputils.NewNetacqCAIDA(ctx, curipinfo.CurDate)
