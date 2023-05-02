@@ -119,7 +119,7 @@ func processmiofile(gmio greynetanalysis.GreynetMinio, ipinfo *IPInfo, filepath 
 	infochan := make(chan *greynetanalysis.PacketAnnotation, 1000)
 	wgchan.Add(1)
 	go func() {
-		jsonname := filepath[:len(filepath)-8] + ".json.gz"
+		jsonname := filepath[:len(filepath)-8] + ".jsonl.gz"
 		streammetadata(infochan, jsonname)
 		wgchan.Done()
 	}()

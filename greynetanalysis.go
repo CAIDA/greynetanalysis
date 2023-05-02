@@ -45,16 +45,22 @@ func AnnotatePacketwithSummary(p gopacket.Packet, cnt int, pfx2asn goiputils.IPH
 			switch iph.Protocol {
 			case layers.IPProtocolTCP:
 				tcpl := p.Layer(layers.LayerTypeTCP)
-				tcph, _ := tcpl.(*layers.TCP)
-				pcksum.Port = uint16(tcph.DstPort)
+				if tcpl != nil {
+					tcph, _ := tcpl.(*layers.TCP)
+					pcksum.Port = uint16(tcph.DstPort)
+				}
 			case layers.IPProtocolUDP:
 				udpl := p.Layer(layers.LayerTypeUDP)
-				udph, _ := udpl.(*layers.UDP)
-				pcksum.Port = uint16(udph.DstPort)
+				if udpl != nil {
+					udph, _ := udpl.(*layers.UDP)
+					pcksum.Port = uint16(udph.DstPort)
+				}
 			case layers.IPProtocolICMPv4:
 				icmpl := p.Layer(layers.LayerTypeICMPv4)
-				icmph, _ := icmpl.(*layers.ICMPv4)
-				pcksum.Port = uint16(icmph.TypeCode)
+				if icmpl != nil {
+					icmph, _ := icmpl.(*layers.ICMPv4)
+					pcksum.Port = uint16(icmph.TypeCode)
+				}
 			default:
 				pcksum.Port = 0
 			}
