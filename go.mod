@@ -7,6 +7,7 @@ require (
 	github.com/CAIDA/gostardust/gostardustswift v0.0.0-00010101000000-000000000000
 	github.com/CAIDA/greynoiseapi v0.0.0
 	github.com/google/gopacket v1.1.19
+	github.com/minio/minio-go/v7 v7.0.52
 	github.com/zmap/go-iptree v0.0.0-20210731043055-d4e632617837
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -20,7 +21,6 @@ require (
 	github.com/klauspost/compress v1.16.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.4 // indirect
 	github.com/minio/md5-simd v1.1.2 // indirect
-	github.com/minio/minio-go/v7 v7.0.52 // indirect
 	github.com/minio/sha256-simd v1.0.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect

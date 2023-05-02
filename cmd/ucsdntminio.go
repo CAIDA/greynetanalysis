@@ -24,6 +24,7 @@ type IPInfo struct {
 	KnownScanner  *greynetanalysis.KnownScanners
 }
 
+
 func main() {
 	ctx := context.Background()
 	gmio := greynetanalysis.NewGreynetMinioiwthContext(ctx)
@@ -32,8 +33,20 @@ func main() {
 	ks.AddSource("mcscanner.yaml", "other")
 	ks.AddSource("data/gn.yaml", "timed")
 	ks.AddSource("data/alienvault.csv", "csv")
-
-	for cdate := time.Date(2023, 3, 27, 0, 0, 0, 0, time.UTC); cdate.Before(time.Date(2023, 4, 3, 0, 0, 0, 0, time.UTC)); cdate = cdate.AddDate(0, 0, 1) {
+	var startstr, endstr string
+	flag.StringVar(&startstr, "start", "2023-3-27", "start date")
+	flag.StringVar(&endstr, "end", "2023-4-3", "end date")
+	flag.Parse()
+	timeformat := "2006-01-02"
+	startts, err := time.Parse(timeformat, startstr)
+	if err := !nil {
+		log.Fatal("date format incorrect")
+	}
+	endts, err := time.Parse(timeformat, endstr)
+	if err := !nil {
+		log.Fatal("date format incorrect")
+	}
+	for cdate := startts; cdate.Before(endts); cdate = cdate.AddDate(0, 0, 1) {
 		curipinfo := &IPInfo{}
 		//just use latest
 		curipinfo.CurDate = cdate
