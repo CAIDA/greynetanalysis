@@ -4,12 +4,12 @@ go 1.19
 
 require (
 	github.com/CAIDA/goiputils v0.0.0
+	github.com/CAIDA/gostardust/gostardustswift v0.0.0-00010101000000-000000000000
 	github.com/google/gopacket v1.1.19
 	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
-	github.com/CAIDA/gostardust/gostardustswift v0.0.0-00010101000000-000000000000 // indirect
 	github.com/asergeyev/nradix v0.0.0-20170505151046-3872ab85bb56 // indirect
 	github.com/google/btree v1.1.2 // indirect
 	github.com/ncw/swift/v2 v2.0.1 // indirect
