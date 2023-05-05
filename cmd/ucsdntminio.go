@@ -4,13 +4,14 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"greynetanalysis"
 	"io"
 	"log"
 	"sync"
 	"time"
-	"flag"
+
 	"github.com/CAIDA/goiputils"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
@@ -24,7 +25,6 @@ type IPInfo struct {
 	KnownScanner  *greynetanalysis.KnownScanners
 }
 
-
 func main() {
 	ctx := context.Background()
 	gmio := greynetanalysis.NewGreynetMinioiwthContext(ctx)
@@ -33,9 +33,10 @@ func main() {
 	ks.AddSource("mcscanner.yaml", "other")
 	ks.AddSource("data/gn.yaml", "timed")
 	ks.AddSource("data/alienvault.csv", "csv")
-	var startstr, endstr string
+	var startstr, endstr, dnsresolver string
 	flag.StringVar(&startstr, "start", "2023-03-27", "start date")
 	flag.StringVar(&endstr, "end", "2023-04-03", "end date")
+	flag.StringVar(&dnsresolver, "dns", "", "dns resolver")
 	flag.Parse()
 	timeformat := "2006-01-02"
 	startts, err := time.Parse(timeformat, startstr)
@@ -51,7 +52,13 @@ func main() {
 		//just use latest
 		curipinfo.CurDate = cdate
 		log.Println("loading latest data structure", cdate)
-		curipinfo.Pfx2asn = goiputils.NewIPHandlerbyDate(curipinfo.CurDate)
+		ipopt := &goiputils.IPHandlerOptions{Timeout: "500ms"}
+		if dnsresolver != "" {
+			ipopt.DNSResolverLoc = dnsresolver
+		}
+		ipopt.Date = curipinfo.CurDate
+		curipinfo.Pfx2asn = goiputils.NewIPHandlerwithOptions(ipopt)
+		//curipinfo.Pfx2asn = goiputils.NewIPHandlerbyDate(curipinfo.CurDate)
 		curipinfo.Mmgeo = goiputils.NewMaxmindCAIDA(ctx, curipinfo.CurDate, "en")
 		curipinfo.Naqgeo = goiputils.NewNetacqCAIDA(ctx, curipinfo.CurDate)
 		curipinfo.KnownScanner = ks
