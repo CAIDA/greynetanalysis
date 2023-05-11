@@ -9,6 +9,9 @@ import (
 	"greynetanalysis"
 	"io"
 	"log"
+	"path/filepath"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -39,9 +42,9 @@ func main() {
 	flag.StringVar(&startstr, "start", "2023-03-27 00:00", "start date")
 	flag.StringVar(&endstr, "end", "2023-04-03 00:00", "end date")
 	flag.StringVar(&dnsresolver, "dns", "", "dns resolver")
-	flag.StringVar(&nworkers, "w", 100000, "number of workers")
+	flag.IntVar(&nworkers, "w", 100000, "number of workers")
 	flag.Parse()
-	timeformat := "2006-01-02 03:04"
+	timeformat := "2006-01-02 15:04"
 	startts, err := time.Parse(timeformat, startstr)
 	if err != nil {
 		log.Fatal("date format incorrect")
@@ -67,8 +70,14 @@ func main() {
 		curipinfo.KnownScanner = ks
 
 		for _, f := range gmio.ListNTpcapsbyDate(cdate) {
-			fmt.Println(f)
-			processmiofile(gmio, curipinfo, f)
+			name := filepath.Base(f)
+			nameparts := strings.Split(name, `.`)
+			ts, _ := strconv.ParseInt(nameparts[1], 10, 64)
+			fts := time.Unix(ts, 0)
+			if fts.After(cdate) || fts.Equal(cdate) {
+				fmt.Println(f)
+				processmiofile(gmio, curipinfo, f)
+			}
 		}
 	}
 }
