@@ -25,6 +25,8 @@ type IPInfo struct {
 	KnownScanner  *greynetanalysis.KnownScanners
 }
 
+var nworkers int
+
 func main() {
 	ctx := context.Background()
 	gmio := greynetanalysis.NewGreynetMinioiwthContext(ctx)
@@ -34,11 +36,12 @@ func main() {
 	ks.AddSource("data/gn.yaml", "timed")
 	ks.AddSource("data/alienvault.csv", "csv")
 	var startstr, endstr, dnsresolver string
-	flag.StringVar(&startstr, "start", "2023-03-27", "start date")
-	flag.StringVar(&endstr, "end", "2023-04-03", "end date")
+	flag.StringVar(&startstr, "start", "2023-03-27 00:00", "start date")
+	flag.StringVar(&endstr, "end", "2023-04-03 00:00", "end date")
 	flag.StringVar(&dnsresolver, "dns", "", "dns resolver")
+	flag.StringVar(&nworkers, "w", 100000, "number of workers")
 	flag.Parse()
-	timeformat := "2006-01-02"
+	timeformat := "2006-01-02 03:04"
 	startts, err := time.Parse(timeformat, startstr)
 	if err != nil {
 		log.Fatal("date format incorrect")
@@ -136,14 +139,14 @@ func processmiofile(gmio greynetanalysis.GreynetMinio, ipinfo *IPInfo, filepath 
 		log.Fatal(err)
 	}
 	cnt := 1
-	infochan := make(chan *greynetanalysis.PacketAnnotation, 1000)
+	infochan := make(chan *greynetanalysis.PacketAnnotation, 10000)
 	wgchan.Add(1)
 	go func() {
 		jsonname := filepath[:len(filepath)-8] + ".jsonl.gz"
 		streammetadata(infochan, jsonname)
 		wgchan.Done()
 	}()
-	packetworker := make(chan bool, 100000)
+	packetworker := make(chan bool, nworkers)
 	for {
 		data, _, err := pcapreader.ReadPacketData()
 		if err == nil {
