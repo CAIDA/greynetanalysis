@@ -67,6 +67,31 @@ func (gmio GreynetMinio) ListNTpcapsbyDate(d time.Time) []string {
 	return objs
 }
 
+
+func (gmio GreynetMinio) ListNTannotationbyDate(d time.Time)[]string{
+	ctx, cancel := context.WithCancel(gmio.Ctx)
+	defer cancel()
+	objprefix := fmt.Sprintf("datasource=ucsd-nt/year=%d/month=%02d/day=%02d", d.Year(), d.Month(), d.Day())
+	objchan := gmio.client.ListObjects(ctx, gmio.bucket, minio.ListObjectsOptions{
+		Prefix:    objprefix,
+		Recursive: true,
+	})
+	objs := make([]string, 0)
+	for object := range objchan {
+		if object.Err != nil {
+			log.Println("list object error", object.Err)
+		} else {
+			//only list pcap files
+			if strings.Contains(object.Key, ".jsonl") {
+				objs = append(objs, object.Key)
+			}
+		}
+	}
+	return objs
+
+}
+
+
 func (gmio GreynetMinio) GetObject(objpath string) *minio.Object {
 	object, err := gmio.client.GetObject(gmio.Ctx, gmio.bucket, objpath, minio.GetObjectOptions{})
 	if err != nil {
