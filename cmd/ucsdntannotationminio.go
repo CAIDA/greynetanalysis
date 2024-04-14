@@ -15,17 +15,21 @@ import (
 	"time"
 	"bufio"
 	"os"
+	"sync/atomic"
 )
 
 type TrafficStat struct {
-	KnownTraffic map[string]int
-	Mirai int
-	Zmap int
-	Masscan int
-	Bogon int
-	Asn map[string]int
-	Country map[string]int
-} 
+	KnownTraffic map[string]uint64
+	KTMutex *sync.RWMutex
+	Mirai uint64
+	Zmap uint64
+	Masscan uint64
+	Bogon uint64
+	Asn map[string]uint64
+	ASMutex *sync.RWMutex
+	Country map[string]uint64
+	CCMutex *sync.RWMutex
+}
 
 
 var nworkers int
@@ -94,46 +98,67 @@ func processmioannotationfile(gmio greynetanalysis.GreynetMinio, filep string) {
 
 	scanner := bufio.NewScanner(preader)
 	tstat := &TrafficStat{Mirai:0 ,Zmap:0, Masscan:0 , Bogon:0}
-	tstat.KnownTraffic = make(map[string]int)
-	tstat.Asn = make(map[string]int)
-	tstat.Country = make(map[string]int)
+	tstat.KnownTraffic = make(map[string]uint64)
+	tstat.KTMutex = &sync.RWMutex{}
+	tstat.Asn = make(map[string]uint64)
+	tstat.ASMutex = &sync.RWMutex{}
+	tstat.CCMutex = &sync.RWMutex{}
+
+	tstat.Country = make(map[string]uint64)
+	var wg sync.WaitGroup
+	jwchan :=make(chan int, 100000)
 	for scanner.Scan(){
-		var pktan *greynetanalysis.PacketAnnotation
-		json.Unmarshal(scanner.Bytes(), &pktan)
-		if pktan.IsZmap {
-			tstat.Zmap +=1
-		}
-		if pktan.IsMasscan {
-			tstat.Masscan += 1
-		}
-		if pktan.IsMirai {
-			tstat.Mirai += 1
-		}
-		if pktan.IsBogon {
-			tstat.Bogon += 1
-		}
-		tstat.Asn[pktan.SrcASN] += 1
-		tstat.Country[pktan.MaxmindCountry] += 1
-		ksarr := strings.Split(pktan.KnownScanner, "|")
-		for _, ks := range ksarr{
-			if len(ks)>0{
-				tstat.KnownTraffic[ks]+=1
+		obj := scanner.Text()
+		jwchan<-1
+		wg.Add(1)
+		go func(b string){
+			var pktan *greynetanalysis.PacketAnnotation
+			json.Unmarshal([]byte(b), &pktan)
+			if pktan.IsZmap {
+				atomic.AddUint64(&tstat.Zmap,1)
 			}
-		}
+			if pktan.IsMasscan {
+				atomic.AddUint64(&tstat.Masscan ,1)
+			}
+			if pktan.IsMirai {
+				atomic.AddUint64(&tstat.Mirai, 1)
+			}
+			if pktan.IsBogon {
+				atomic.AddUint64(&tstat.Bogon, 1)
+			}
+			tstat.ASMutex.Lock()
+			tstat.Asn[pktan.SrcASN] += 1
+			tstat.ASMutex.Unlock()
+			tstat.CCMutex.Lock()
+			tstat.Country[pktan.MaxmindCountry] += 1
+			tstat.CCMutex.Unlock()
+			ksarr := strings.Split(pktan.KnownScanner, "|")
+			for _, ks := range ksarr{
+				if len(ks)>0{
+					tstat.KTMutex.Lock()
+					tstat.KnownTraffic[ks]+=1
+					//log.Println(tstat.KnownTraffic)
+					tstat.KTMutex.Unlock()
+				}
+			}
+			wg.Done()
+			<-jwchan
+		}(obj)
 
 	}
-		f.WriteString(fmt.Sprintf("zmap,%d",tstat.Mirai))
-	f.WriteString(fmt.Sprintf("masscan,%d",tstat.Masscan))
-	f.WriteString(fmt.Sprintf("bogon,%d",tstat.Bogon))
+	wg.Wait()
+	f.WriteString(fmt.Sprintf("zmap,%d\n",tstat.Mirai))
+	f.WriteString(fmt.Sprintf("masscan,%d\n",tstat.Masscan))
+	f.WriteString(fmt.Sprintf("bogon,%d\n",tstat.Bogon))
 	for asn, asnt := range tstat.Asn {
-		f.WriteString(fmt.Sprintf("asn,%s,%d",asn, asnt))
+		f.WriteString(fmt.Sprintf("asn,%s,%d\n",asn, asnt))
 	}
 
 	for known, knownt := range tstat.KnownTraffic{
-		f.WriteString(fmt.Sprintf("known,%s,%d",known, knownt))
+		f.WriteString(fmt.Sprintf("known,%s,%d\n",known, knownt))
 	}
 	for cc, cct := range tstat.Country {
-		f.WriteString(fmt.Sprintf("cc,%s,%d",cc, cct))
+		f.WriteString(fmt.Sprintf("cc,%s,%d\n",cc, cct))
 	}
 	f.Sync()
 	log.Println("writing final bits")
