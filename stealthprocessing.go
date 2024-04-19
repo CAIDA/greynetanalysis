@@ -125,8 +125,10 @@ func Processpcap_onlinemap(pcapgzfile string, onlinemap OnlineMap) {
 			probetime := ci.Timestamp
 			ttl := pkt.NetworkLayer().(*layers.IPv4).TTL
 			//pkt.Metadata().Timestamp
-			timetrunc := 5 * time.Minute
-			timeform := "2006-01-02 03:04"
+			//timetrunc := 5 * time.Minute
+			timetrunc := 24 * time.Hour
+			//timeform := "2006-01-02 03:04"
+			timeform := "2006-01-02"
 			onlinemap.Lock.Lock()
 			if _, srcexist := onlinemap.Hostmap[srcip]; !srcexist {
 
