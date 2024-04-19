@@ -41,7 +41,8 @@ func main() {
 		}
 	}
 	wg.Wait()
-	Printonlinemap(onlinemap)
+	//Printonlinemap(onlinemap)
+	Analyzeonlinemap(onlinemap)
 }
 
 func Printonlinemap(onlinemap greynetanalysis.OnlineMap) {
@@ -51,6 +52,32 @@ func Printonlinemap(onlinemap greynetanalysis.OnlineMap) {
 			/*for _, probe := range probelist {
 				fmt.Println("-", probe.ProbeTime, probe.ProbeIP)
 			}*/
+		}
+	}
+}
+
+func Analyzeonlinemap(onlinemap greynetanalysis.OnlineMap) {
+	for srcip, datemap := range onlinemap.Hostmap {
+		for date, probelist := range datemap {
+			probeipmap := make(map[string]int)
+			probettlmap := make(map[uint8]int)
+			for _, probe := range probelist {
+				probeipmap[probe.ProbeIP]++
+				probettlmap[probe.Ttl]++
+			}
+			no_multi_probe := 0
+			for _, v := range probeipmap {
+				if v > 1 {
+					no_multi_probe++
+				}
+			}
+			ttlstr := ""
+			ttlcntstr := ""
+			for k, v := range probettlmap {
+				ttlstr += fmt.Sprintf("%d|", k)
+				ttlcntstr += fmt.Sprintf("%d|", v)
+			}
+			fmt.Println(srcip, ",", date, ",", no_multi_probe, ",", ttlstr, ",", ttlcntstr)
 		}
 	}
 }

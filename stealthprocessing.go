@@ -18,6 +18,7 @@ import (
 type ProbeDetails struct {
 	ProbeIP   string
 	ProbeTime time.Time
+	Ttl       uint8
 }
 
 type OnlineMap struct {
@@ -122,6 +123,7 @@ func Processpcap_onlinemap(pcapgzfile string, onlinemap OnlineMap) {
 			srcip := pkt.NetworkLayer().NetworkFlow().Src().String()
 			dstip := pkt.NetworkLayer().NetworkFlow().Dst().String()
 			probetime := ci.Timestamp
+			ttl := pkt.NetworkLayer().(*layers.IPv4).TTL
 			//pkt.Metadata().Timestamp
 			timetrunc := 5 * time.Minute
 			timeform := "2006-01-02 03:04"
@@ -131,7 +133,7 @@ func Processpcap_onlinemap(pcapgzfile string, onlinemap OnlineMap) {
 				onlinemap.Hostmap[srcip] = make(map[string][]*ProbeDetails)
 				//	onlinemap[srcip][probetime.Truncate(24*time.Hour).Format("2006-01-02")] = append(onlinemap[srcip][probetime.Truncate(24*time.Hour).Format("2006-01-02")], &ProbeDetails{ProbeIP: dstip, ProbeTime: probetime})
 			}
-			onlinemap.Hostmap[srcip][probetime.Truncate(timetrunc).Format(timeform)] = append(onlinemap.Hostmap[srcip][probetime.Truncate(timetrunc).Format(timeform)], &ProbeDetails{ProbeIP: dstip, ProbeTime: probetime})
+			onlinemap.Hostmap[srcip][probetime.Truncate(timetrunc).Format(timeform)] = append(onlinemap.Hostmap[srcip][probetime.Truncate(timetrunc).Format(timeform)], &ProbeDetails{ProbeIP: dstip, ProbeTime: probetime, Ttl: ttl})
 			onlinemap.Lock.Unlock()
 		} else {
 			break
