@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"sync"
 )
 
@@ -71,13 +72,13 @@ func Analyzeonlinemap(onlinemap greynetanalysis.OnlineMap) {
 					no_multi_probe++
 				}
 			}
-			ttlstr := ""
-			ttlcntstr := ""
+			ttlstr := make([]string, 0, 0)
+			ttlcntstr := make([]string, 0, 0)
 			for k, v := range probettlmap {
-				ttlstr += fmt.Sprintf("%d|", k)
-				ttlcntstr += fmt.Sprintf("%d|", v)
+				ttlstr = append(ttlstr, fmt.Sprintf("%d", k))
+				ttlcntstr = append(ttlcntstr, fmt.Sprintf("%d", v))
 			}
-			fmt.Println(srcip, ",", date, ",", no_multi_probe, ",", ttlstr, ",", ttlcntstr)
+			fmt.Println(srcip, ",", date, ",", no_multi_probe, ",", strings.Join(ttlstr, "|"), ",", strings.Join(ttlcntstr, "|"))
 		}
 	}
 }
