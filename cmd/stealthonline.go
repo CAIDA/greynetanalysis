@@ -78,7 +78,7 @@ func Analyzeonlinemap(onlinemap greynetanalysis.OnlineMap) {
 				ttlstr = append(ttlstr, fmt.Sprintf("%d", k))
 				ttlcntstr = append(ttlcntstr, fmt.Sprintf("%d", v))
 			}
-			fmt.Println(srcip, ",", date, ",", len(probelist), ",", strings.Join(ttlstr, "|"), ",", strings.Join(ttlcntstr, "|"))
+			fmt.Println(srcip, ",", date, ",", len(probelist), ",", no_multi_probe, ",", strings.Join(ttlstr, "|"), ",", strings.Join(ttlcntstr, "|"))
 		}
 	}
 }
