@@ -24,9 +24,10 @@ func main() {
 	ctx := context.Background()
 	gmio := greynetanalysis.NewGreynetMinioiwthContext(ctx)
 
-	var startstr, endstr, dnsresolver string
+	var startstr, endstr, outdir string
 	flag.StringVar(&startstr, "start", "2023-03-27 00:00", "start date")
 	flag.StringVar(&endstr, "end", "2023-04-03 00:00", "end date")
+	flag.StringVar(&outdir, "o", ".", "output directory")
 	flag.Parse()
 	timeformat := "2006-01-02 15:04"
 	startts, err := time.Parse(timeformat, startstr)
@@ -47,22 +48,22 @@ func main() {
 			fts := time.Unix(ts, 0)
 			if fts.After(cdate) || fts.Equal(cdate) {
 				wg.Add(1)
-				go func(f string) {
+				go func(f, o string) {
 					fmt.Println(f)
-					hrscmap := processAHmiofile(gmio, f)
+					hrscmap := processAHmiofile(gmio, f, o)
 					dayscmap.MergeScannerMap(hrscmap)
 					fmt.Println("completed", f)
 					wg.Done()
-				}(f)
+				}(f, outdir)
 			}
 		}
 		wg.Wait()
 		ad := dayscmap.GetAggressiveScannersAD()
-		printiparrtofile(ad, cdate.Format("2006-01-02")+".ad.txt")
+		printiparrtofile(ad, filepath.Join(outdir, cdate.Format("2006-01-02")+".ad.txt"))
 		pv := dayscmap.GetAggressiveScannersPV()
-		printiparrtofile(pv, cdate.Format("2006-01-02")+".pv.txt")
+		printiparrtofile(pv, filepath.Join(outdir, cdate.Format("2006-01-02")+".pv.txt"))
 		dp := dayscmap.GetAggressiveScannersDP()
-		printiparrtofile(dp, cdate.Format("2006-01-02")+".dp.txt")
+		printiparrtofile(dp, filepath.Join(outdir, cdate.Format("2006-01-02")+".dp.txt"))
 
 	}
 }
@@ -78,9 +79,9 @@ func printiparrtofile(ad []netip.Addr, fname string) {
 	}
 }
 
-func processAHmiofile(gmio greynetanalysis.GreynetMinio, filepath string) greynetanalysis.ScannerMap {
-	log.Println("processing file:", filepath)
-	pcapgz := gmio.GetObject(filepath)
+func processAHmiofile(gmio greynetanalysis.GreynetMinio, fpath, outdir string) greynetanalysis.ScannerMap {
+	log.Println("processing file:", fpath)
+	pcapgz := gmio.GetObject(fpath)
 	//	pbuf := bytes.NewBuffer(pcapgz)
 	preader, err := gzip.NewReader(pcapgz)
 	if err != nil {
@@ -102,6 +103,6 @@ func processAHmiofile(gmio greynetanalysis.GreynetMinio, filepath string) greyne
 			break
 		}
 	}
-	scmap.OutputJSON(filepath[:len(filepath)-8] + ".sc.json")
+	scmap.OutputJSON(filepath.Join(outdir, fpath[:len(fpath)-8]+".sc.json"))
 	return scmap
 }
