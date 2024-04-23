@@ -29,6 +29,7 @@ func main() {
 	flag.StringVar(&endstr, "end", "2023-04-03 00:00", "end date")
 	flag.StringVar(&outdir, "o", ".", "output directory")
 	flag.Parse()
+	worker := 5
 	timeformat := "2006-01-02 15:04"
 	startts, err := time.Parse(timeformat, startstr)
 	if err != nil {
@@ -39,6 +40,7 @@ func main() {
 		log.Fatal("date format incorrect")
 	}
 	var wg sync.WaitGroup
+	workerch := make(chan bool, worker)
 	for cdate := startts; cdate.Before(endts); cdate = cdate.AddDate(0, 0, 1) {
 		dayscmap := greynetanalysis.CreateScannerProfile()
 		for _, f := range gmio.ListNTpcapsbyDate(cdate) {
@@ -47,12 +49,14 @@ func main() {
 			ts, _ := strconv.ParseInt(nameparts[1], 10, 64)
 			fts := time.Unix(ts, 0)
 			if fts.After(cdate) || fts.Equal(cdate) {
+				workerch <- true
 				wg.Add(1)
 				go func(f, o string) {
 					fmt.Println(f)
 					hrscmap := processAHmiofile(gmio, f, o)
 					dayscmap.MergeScannerMap(hrscmap)
 					fmt.Println("completed", f)
+					<-workerch
 					wg.Done()
 				}(f, outdir)
 			}
