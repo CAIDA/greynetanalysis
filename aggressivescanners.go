@@ -28,22 +28,36 @@ func (m ScannerMap) AddScannerProfile(p gopacket.Packet) {
 	srcip, sok := netip.AddrFromSlice(p.NetworkLayer().NetworkFlow().Src().Raw())
 
 	if dok && sok {
-		dstepoint := p.TransportLayer().TransportFlow().EndpointType().String() + ":" + p.TransportLayer().TransportFlow().Dst().String()
-		if _, exist := m[srcip]; !exist {
-			m[srcip] = &ScannerProfile{Dest: make(map[netip.Addr]int), Port: make(map[string]int)}
-			m[srcip].Dest[dstip] = 1
-			m[srcip].Port[dstepoint] = 1
+		if p.TransportLayer() != nil {
+			dstepoint := p.TransportLayer().TransportFlow().EndpointType().String() + ":" + p.TransportLayer().TransportFlow().Dst().String()
+			if _, exist := m[srcip]; !exist {
+				m[srcip] = &ScannerProfile{Dest: make(map[netip.Addr]int), Port: make(map[string]int)}
+				m[srcip].Dest[dstip] = 1
+				m[srcip].Port[dstepoint] = 1
+			} else {
+				if smap, sexist := m[srcip].Dest[dstip]; !sexist {
+					smap = 1
+				} else {
+					smap++
+				}
+				if pmap, pexist := m[srcip].Port[dstepoint]; !pexist {
+					pmap = 1
+				} else {
+					pmap++
+				}
+			}
 		} else {
-			if smap, sexist := m[srcip].Dest[dstip]; !sexist {
-				smap = 1
+			if _, exist := m[srcip]; !exist {
+				m[srcip] = &ScannerProfile{Dest: make(map[netip.Addr]int), Port: make(map[string]int)}
+				m[srcip].Dest[dstip] = 1
 			} else {
-				smap++
+				if smap, sexist := m[srcip].Dest[dstip]; !sexist {
+					smap = 1
+				} else {
+					smap++
+				}
 			}
-			if pmap, pexist := m[srcip].Port[dstepoint]; !pexist {
-				pmap = 1
-			} else {
-				pmap++
-			}
+
 		}
 	}
 	m[srcip].PckCount++
