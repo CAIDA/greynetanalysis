@@ -51,6 +51,7 @@ func main() {
 					fmt.Println(f)
 					hrscmap := processAHmiofile(gmio, f)
 					dayscmap.MergeScannerMap(hrscmap)
+					fmt.Println("completed", f)
 					wg.Done()
 				}(f)
 			}
