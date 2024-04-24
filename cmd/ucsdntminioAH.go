@@ -107,6 +107,6 @@ func processAHmiofile(gmio greynetanalysis.GreynetMinio, fpath, outdir string) g
 			break
 		}
 	}
-	scmap.OutputJSON(filepath.Join(outdir, fpath[:len(fpath)-8]+".sc.json"))
+	scmap.OutputJSON(filepath.Join(outdir, filepath.Base(fpath[:len(fpath)-8])+".sc.json"))
 	return scmap
 }
