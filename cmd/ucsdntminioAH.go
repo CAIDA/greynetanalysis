@@ -29,7 +29,7 @@ func main() {
 	flag.StringVar(&endstr, "end", "2023-04-03 00:00", "end date")
 	flag.StringVar(&outdir, "o", ".", "output directory")
 	flag.Parse()
-	worker := 5
+	worker := 10
 	timeformat := "2006-01-02 15:04"
 	startts, err := time.Parse(timeformat, startstr)
 	if err != nil {
@@ -62,12 +62,13 @@ func main() {
 			}
 		}
 		wg.Wait()
-		ad := dayscmap.GetAggressiveScannersAD()
-		printiparrtofile(ad, filepath.Join(outdir, cdate.Format("2006-01-02")+".ad.txt"))
-		pv := dayscmap.GetAggressiveScannersPV()
-		printiparrtofile(pv, filepath.Join(outdir, cdate.Format("2006-01-02")+".pv.txt"))
-		dp := dayscmap.GetAggressiveScannersDP()
-		printiparrtofile(dp, filepath.Join(outdir, cdate.Format("2006-01-02")+".dp.txt"))
+		dayscmap.OutputJSON(filepath.Join(outdir, cdate.Format("2006-01-02")+".daysc.json"))
+		//ad := dayscmap.GetAggressiveScannersAD()
+		//printiparrtofile(ad, filepath.Join(outdir, cdate.Format("2006-01-02")+".ad.txt"))
+		//pv := dayscmap.GetAggressiveScannersPV()
+		//printiparrtofile(pv, filepath.Join(outdir, cdate.Format("2006-01-02")+".pv.txt"))
+		//dp := dayscmap.GetAggressiveScannersDP()
+		//printiparrtofile(dp, filepath.Join(outdir, cdate.Format("2006-01-02")+".dp.txt"))
 
 	}
 }
