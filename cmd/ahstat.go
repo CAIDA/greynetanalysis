@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"greynetanalysis"
 )
 
@@ -16,7 +17,7 @@ func main() {
 	scprofile := greynetanalysis.ReadScannerProfile(filestr)
 	for k, v := range scprofile {
 		if v.PckCount > 0 {
-			println(k, v.PckCount)
+			fmt.Println(k, v.PckCount)
 		}
 	}
 }
