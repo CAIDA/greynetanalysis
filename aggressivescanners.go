@@ -49,15 +49,15 @@ func (m ScannerMap) AddScannerProfile(p gopacket.Packet) {
 				m[srcip].Dest[dstip] = 1
 				m[srcip].Port[dstepoint] = 1
 			} else {
-				if smap, sexist := m[srcip].Dest[dstip]; !sexist {
-					smap = 1
+				if _, sexist := m[srcip].Dest[dstip]; !sexist {
+					m[srcip].Dest[dstip] = 1
 				} else {
-					smap++
+					m[srcip].Dest[dstip]++
 				}
-				if pmap, pexist := m[srcip].Port[dstepoint]; !pexist {
-					pmap = 1
+				if _, pexist := m[srcip].Port[dstepoint]; !pexist {
+					m[srcip].Port[dstepoint] = 1
 				} else {
-					pmap++
+					m[srcip].Port[dstepoint]++
 				}
 			}
 		} else {
@@ -65,10 +65,10 @@ func (m ScannerMap) AddScannerProfile(p gopacket.Packet) {
 				m[srcip] = &ScannerProfile{Dest: make(map[netip.Addr]int), Port: make(map[string]int)}
 				m[srcip].Dest[dstip] = 1
 			} else {
-				if smap, sexist := m[srcip].Dest[dstip]; !sexist {
-					smap = 1
+				if _, sexist := m[srcip].Dest[dstip]; !sexist {
+					m[srcip].Dest[dstip] = 1
 				} else {
-					smap++
+					m[srcip].Dest[dstip]++
 				}
 			}
 
