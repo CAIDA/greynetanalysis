@@ -17,7 +17,7 @@ func main() {
 	scprofile := greynetanalysis.ReadScannerProfile(filestr)
 	for k, v := range scprofile {
 		if v.PckCount > 0 {
-			fmt.Println(k, v.PckCount)
+			fmt.Println(k, v.PckCount, len(v.Dest), len(v.Port))
 		}
 	}
 }
