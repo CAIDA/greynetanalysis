@@ -23,6 +23,20 @@ func CreateScannerProfile() ScannerMap {
 	return make(map[netip.Addr]*ScannerProfile)
 }
 
+func ReadScannerProfile(fname string) ScannerMap {
+	var m ScannerMap
+	infile, err := os.Open(fname)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer infile.Close()
+	err = json.NewDecoder(infile).Decode(&m)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return m
+}
+
 func (m ScannerMap) AddScannerProfile(p gopacket.Packet) {
 	dstip, dok := netip.AddrFromSlice(p.NetworkLayer().NetworkFlow().Dst().Raw())
 	srcip, sok := netip.AddrFromSlice(p.NetworkLayer().NetworkFlow().Src().Raw())
