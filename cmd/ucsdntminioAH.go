@@ -29,7 +29,7 @@ func main() {
 	flag.StringVar(&endstr, "end", "2023-04-03 00:00", "end date")
 	flag.StringVar(&outdir, "o", ".", "output directory")
 	flag.Parse()
-	worker := 10
+	worker := 1
 	timeformat := "2006-01-02 15:04"
 	startts, err := time.Parse(timeformat, startstr)
 	if err != nil {
