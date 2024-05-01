@@ -7,7 +7,6 @@ import (
 	"os"
 	"sort"
 	"sync"
-	"sync/atomic"
 
 	"github.com/google/gopacket"
 	"gonum.org/v1/gonum/stat"
@@ -53,13 +52,14 @@ func (m ScannerMap) AddScannerProfile(p gopacket.Packet) {
 			dstepoint := p.TransportLayer().TransportFlow().EndpointType().String() + ":" + p.TransportLayer().TransportFlow().Dst().String()
 			m.ScannerLock.Lock()
 			if _, exist := m.Scanner[srcip]; !exist {
-				m.Scanner[srcip] = &ScannerProfile{Dest: make(map[netip.Addr]uint8), Port: make(map[string]uint8), DestLock: &sync.Mutex{}}
+				m.Scanner[srcip] = &ScannerProfile{Dest: make(map[netip.Addr]uint8), Port: make(map[string]uint8), DestLock: &sync.Mutex{}, PckCount: 1}
 				m.ScannerLock.Unlock()
 				m.Scanner[srcip].DestLock.Lock()
 				m.Scanner[srcip].Dest[dstip] = 1
 				m.Scanner[srcip].Port[dstepoint] = 1
 				m.Scanner[srcip].DestLock.Unlock()
 			} else {
+				m.Scanner[srcip].PckCount++
 				m.ScannerLock.Unlock()
 				m.Scanner[srcip].DestLock.Lock()
 				if _, sexist := m.Scanner[srcip].Dest[dstip]; !sexist {
@@ -73,11 +73,12 @@ func (m ScannerMap) AddScannerProfile(p gopacket.Packet) {
 		} else {
 			m.ScannerLock.Lock()
 			if _, exist := m.Scanner[srcip]; !exist {
-				m.Scanner[srcip] = &ScannerProfile{Dest: make(map[netip.Addr]uint8), Port: make(map[string]uint8), DestLock: &sync.Mutex{}}
+				m.Scanner[srcip] = &ScannerProfile{Dest: make(map[netip.Addr]uint8), Port: make(map[string]uint8), DestLock: &sync.Mutex{}, PckCount: 1}
 				m.ScannerLock.Unlock()
 				m.Scanner[srcip].DestLock.Lock()
 				m.Scanner[srcip].Dest[dstip] = 1
 			} else {
+				m.Scanner[srcip].PckCount++
 				m.ScannerLock.Unlock()
 				m.Scanner[srcip].DestLock.Lock()
 				if _, sexist := m.Scanner[srcip].Dest[dstip]; !sexist {
@@ -87,7 +88,6 @@ func (m ScannerMap) AddScannerProfile(p gopacket.Packet) {
 			m.Scanner[srcip].DestLock.Unlock()
 		}
 	}
-	atomic.AddUint32(&m.Scanner[srcip].PckCount, 1)
 }
 
 func (m ScannerMap) MergeScannerMap(mnew ScannerMap) {
