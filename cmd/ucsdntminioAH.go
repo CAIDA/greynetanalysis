@@ -45,7 +45,7 @@ func main() {
 		dayscmap := greynetanalysis.CreateScannerProfile()
 		wg.Add(1)
 		go func() {
-			greynetanalysis.AddScannerProfile()
+			dayscmap.AddScannerProfile()
 			wg.Done()
 		}()
 		for _, f := range gmio.ListNTpcapsbyDate(cdate) {
