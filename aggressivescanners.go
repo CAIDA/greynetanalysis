@@ -16,7 +16,6 @@ type ScannerProfile struct {
 	Dest     map[netip.Addr]uint8
 	Port     map[string]uint8
 	PckCount uint32
-	DestLock *sync.Mutex
 }
 
 type ScannerMap struct {
@@ -52,41 +51,31 @@ func (m ScannerMap) AddScannerProfile(p gopacket.Packet) {
 			dstepoint := p.TransportLayer().TransportFlow().EndpointType().String() + ":" + p.TransportLayer().TransportFlow().Dst().String()
 			m.ScannerLock.Lock()
 			if _, exist := m.Scanner[srcip]; !exist {
-				m.Scanner[srcip] = &ScannerProfile{Dest: make(map[netip.Addr]uint8), Port: make(map[string]uint8), DestLock: &sync.Mutex{}, PckCount: 1}
-				m.ScannerLock.Unlock()
-				m.Scanner[srcip].DestLock.Lock()
+				m.Scanner[srcip] = &ScannerProfile{Dest: make(map[netip.Addr]uint8), Port: make(map[string]uint8), PckCount: 1}
 				m.Scanner[srcip].Dest[dstip] = 1
 				m.Scanner[srcip].Port[dstepoint] = 1
-				m.Scanner[srcip].DestLock.Unlock()
 			} else {
 				m.Scanner[srcip].PckCount++
-				m.ScannerLock.Unlock()
-				m.Scanner[srcip].DestLock.Lock()
 				if _, sexist := m.Scanner[srcip].Dest[dstip]; !sexist {
 					m.Scanner[srcip].Dest[dstip] = 1
 				}
 				if _, pexist := m.Scanner[srcip].Port[dstepoint]; !pexist {
 					m.Scanner[srcip].Port[dstepoint] = 1
 				}
-				m.Scanner[srcip].DestLock.Unlock()
 			}
 		} else {
 			m.ScannerLock.Lock()
 			if _, exist := m.Scanner[srcip]; !exist {
-				m.Scanner[srcip] = &ScannerProfile{Dest: make(map[netip.Addr]uint8), Port: make(map[string]uint8), DestLock: &sync.Mutex{}, PckCount: 1}
-				m.ScannerLock.Unlock()
-				m.Scanner[srcip].DestLock.Lock()
+				m.Scanner[srcip] = &ScannerProfile{Dest: make(map[netip.Addr]uint8), Port: make(map[string]uint8), PckCount: 1}
 				m.Scanner[srcip].Dest[dstip] = 1
 			} else {
 				m.Scanner[srcip].PckCount++
-				m.ScannerLock.Unlock()
-				m.Scanner[srcip].DestLock.Lock()
 				if _, sexist := m.Scanner[srcip].Dest[dstip]; !sexist {
 					m.Scanner[srcip].Dest[dstip] = 1
 				}
 			}
-			m.Scanner[srcip].DestLock.Unlock()
 		}
+		m.ScannerLock.Unlock()
 	}
 }
 
