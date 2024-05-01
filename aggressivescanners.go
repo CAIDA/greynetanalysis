@@ -52,7 +52,7 @@ func (m ScannerMap) AddScannerProfile(p gopacket.Packet) {
 			dstepoint := p.TransportLayer().TransportFlow().EndpointType().String() + ":" + p.TransportLayer().TransportFlow().Dst().String()
 			m.ScannerLock.Lock()
 			if _, exist := m.Scanner[srcip]; !exist {
-				m.Scanner[srcip] = &ScannerProfile{Dest: make(map[netip.Addr]uint8), Port: make(map[string]uint8), DestLock: sync.Mutex{}
+				m.Scanner[srcip] = &ScannerProfile{Dest: make(map[netip.Addr]uint8), Port: make(map[string]uint8), DestLock: sync.Mutex{}}
 				m.ScannerLock.Unlock()
 				m.Scanner[srcip].DestLock.Lock()
 				m.Scanner[srcip].Dest[dstip] = 1
@@ -72,7 +72,7 @@ func (m ScannerMap) AddScannerProfile(p gopacket.Packet) {
 		} else {
 			m.ScannerLock.Lock()
 			if _, exist := m.Scanner[srcip]; !exist {
-				m.Scanner[srcip] = &ScannerProfile{Dest: make(map[netip.Addr]int), Port: make(map[string]int), DestLock: sync.Mutex{}
+				m.Scanner[srcip] = &ScannerProfile{Dest: make(map[netip.Addr]int), Port: make(map[string]int), DestLock: sync.Mutex{}}
 				m.ScannerLock.Unlock()
 				m.Scanner[srcip].DestLock.Lock()
 				m[srcip].Dest[dstip] = 1
