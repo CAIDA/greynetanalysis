@@ -62,7 +62,7 @@ func main() {
 		}
 		wg.Wait()
 		dayscmap.OutputJSON(filepath.Join(outdir, cdate.Format("2006-01-02")+".daysc.json"))
-		dayscmap.OutputStats(filepath.Join(outdir, cdate.Format("2006-01-02")+".stats.csv"))
+		dayscmap.OutputStat(filepath.Join(outdir, cdate.Format("2006-01-02")+".stats.csv"))
 		//ad := dayscmap.GetAggressiveScannersAD()
 		//printiparrtofile(ad, filepath.Join(outdir, cdate.Format("2006-01-02")+".ad.txt"))
 		//pv := dayscmap.GetAggressiveScannersPV()
@@ -107,5 +107,5 @@ func processAHmiofile(gmio greynetanalysis.GreynetMinio, fpath string, scmap gre
 		}
 	}
 	//scmap.OutputJSON(filepath.Join(outdir, filepath.Base(fpath[:len(fpath)-8])+".sc.json"))
-	return scmap
+	return
 }
