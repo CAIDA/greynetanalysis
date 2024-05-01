@@ -29,7 +29,7 @@ func main() {
 	flag.StringVar(&endstr, "end", "2023-04-03 00:00", "end date")
 	flag.StringVar(&outdir, "o", ".", "output directory")
 	flag.Parse()
-	worker := 1
+	worker := 5
 	timeformat := "2006-01-02 15:04"
 	startts, err := time.Parse(timeformat, startstr)
 	if err != nil {
@@ -44,25 +44,25 @@ func main() {
 	for cdate := startts; cdate.Before(endts); cdate = cdate.AddDate(0, 0, 1) {
 		dayscmap := greynetanalysis.CreateScannerProfile()
 		for _, f := range gmio.ListNTpcapsbyDate(cdate) {
-			name := filepath.Base(f)
-			nameparts := strings.Split(name, `.`)
+			nameparts := strings.Split(filepath.Base(f), `.`)
 			ts, _ := strconv.ParseInt(nameparts[1], 10, 64)
 			fts := time.Unix(ts, 0)
 			if fts.After(cdate) || fts.Equal(cdate) {
 				workerch <- true
 				wg.Add(1)
-				go func(f, o string) {
+				go func(f string) {
 					fmt.Println(f)
-					hrscmap := processAHmiofile(gmio, f, o)
-					dayscmap.MergeScannerMap(hrscmap)
+					processAHmiofile(gmio, f, dayscmap)
+					//dayscmap.MergeScannerMap(hrscmap)
 					fmt.Println("completed", f)
 					<-workerch
 					wg.Done()
-				}(f, outdir)
+				}(f)
 			}
 		}
 		wg.Wait()
 		dayscmap.OutputJSON(filepath.Join(outdir, cdate.Format("2006-01-02")+".daysc.json"))
+		dayscmap.OutputStats(filepath.Join(outdir, cdate.Format("2006-01-02")+".stats.csv"))
 		//ad := dayscmap.GetAggressiveScannersAD()
 		//printiparrtofile(ad, filepath.Join(outdir, cdate.Format("2006-01-02")+".ad.txt"))
 		//pv := dayscmap.GetAggressiveScannersPV()
@@ -84,30 +84,28 @@ func printiparrtofile(ad []netip.Addr, fname string) {
 	}
 }
 
-func processAHmiofile(gmio greynetanalysis.GreynetMinio, fpath, outdir string) greynetanalysis.ScannerMap {
+func processAHmiofile(gmio greynetanalysis.GreynetMinio, fpath string, scmap greynetanalysis.ScannerMap) {
 	log.Println("processing file:", fpath)
 	pcapgz := gmio.GetObject(fpath)
 	//	pbuf := bytes.NewBuffer(pcapgz)
 	preader, err := gzip.NewReader(pcapgz)
 	if err != nil {
 		log.Println(err)
-		return nil
+		return
 	}
 	defer preader.Close()
 	pcapreader, err := pcapgo.NewReader(preader)
 	if err != nil {
 		log.Fatal(err)
 	}
-	scmap := greynetanalysis.CreateScannerProfile()
 	for {
 		data, _, err := pcapreader.ReadPacketData()
 		if err == nil {
-			pkt := gopacket.NewPacket(data, layers.LayerTypeEthernet, gopacket.NoCopy)
-			scmap.AddScannerProfile(pkt)
+			scmap.AddScannerProfile(gopacket.NewPacket(data, layers.LayerTypeEthernet, gopacket.NoCopy))
 		} else {
 			break
 		}
 	}
-	scmap.OutputJSON(filepath.Join(outdir, filepath.Base(fpath[:len(fpath)-8])+".sc.json"))
+	//scmap.OutputJSON(filepath.Join(outdir, filepath.Base(fpath[:len(fpath)-8])+".sc.json"))
 	return scmap
 }

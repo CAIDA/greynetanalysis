@@ -6,21 +6,27 @@ import (
 	"net/netip"
 	"os"
 	"sort"
+	"sync"
 
 	"github.com/google/gopacket"
 	"gonum.org/v1/gonum/stat"
 )
 
 type ScannerProfile struct {
-	Dest     map[netip.Addr]int
-	Port     map[string]int
-	PckCount int
+	Dest     map[netip.Addr]uint8
+	Port     map[string]uint8
+	PckCount uint32
+	DestLock sync.Mutex
 }
 
-type ScannerMap map[netip.Addr]*ScannerProfile
+type ScannerMap struct {
+	Scanner     map[netip.Addr]*ScannerProfile
+	ScannerLock sync.RWMutex
+}
 
 func CreateScannerProfile() ScannerMap {
-	return make(map[netip.Addr]*ScannerProfile)
+	return ScannerMap{Scanner: make(map[netip.Addr]*ScannerProfile), ScannerLock: sync.RWMutex{}}
+
 }
 
 func ReadScannerProfile(fname string) ScannerMap {
@@ -44,34 +50,40 @@ func (m ScannerMap) AddScannerProfile(p gopacket.Packet) {
 	if dok && sok {
 		if p.TransportLayer() != nil {
 			dstepoint := p.TransportLayer().TransportFlow().EndpointType().String() + ":" + p.TransportLayer().TransportFlow().Dst().String()
-			if _, exist := m[srcip]; !exist {
-				m[srcip] = &ScannerProfile{Dest: make(map[netip.Addr]int), Port: make(map[string]int)}
-				m[srcip].Dest[dstip] = 1
-				m[srcip].Port[dstepoint] = 1
+			m.ScannerLock.Lock()
+			if _, exist := m.Scanner[srcip]; !exist {
+				m.Scanner[srcip] = &ScannerProfile{Dest: make(map[netip.Addr]uint8), Port: make(map[string]uint8), DestLock: sync.Mutex{}
+				m.ScannerLock.Unlock()
+				m.Scanner[srcip].DestLock.Lock()
+				m.Scanner[srcip].Dest[dstip] = 1
+				m.Scanner[srcip].Port[dstepoint] = 1
+				m.Scanner[srcip].DestLock.UnLock()
 			} else {
-				if _, sexist := m[srcip].Dest[dstip]; !sexist {
+				m.ScannerLock.Unlock()
+				m.Scanner[srcip].DestLock.Lock()
+				if _, sexist := m.Scanner[srcip].Dest[dstip]; !sexist {
 					m[srcip].Dest[dstip] = 1
-				} else {
-					m[srcip].Dest[dstip]++
 				}
 				if _, pexist := m[srcip].Port[dstepoint]; !pexist {
 					m[srcip].Port[dstepoint] = 1
-				} else {
-					m[srcip].Port[dstepoint]++
-				}
+				} 
+				m[srcip].DestLock.Unlock()
 			}
 		} else {
-			if _, exist := m[srcip]; !exist {
-				m[srcip] = &ScannerProfile{Dest: make(map[netip.Addr]int), Port: make(map[string]int)}
+			m.ScannerLock.Lock()
+			if _, exist := m.Scanner[srcip]; !exist {
+				m.Scanner[srcip] = &ScannerProfile{Dest: make(map[netip.Addr]int), Port: make(map[string]int), DestLock: sync.Mutex{}
+				m.ScannerLock.Unlock()
+				m.Scanner[srcip].DestLock.Lock()
 				m[srcip].Dest[dstip] = 1
 			} else {
+				m.ScannerLock.Unlock()
+				m.Scanner[srcip].DestLock.Lock()
 				if _, sexist := m[srcip].Dest[dstip]; !sexist {
 					m[srcip].Dest[dstip] = 1
-				} else {
-					m[srcip].Dest[dstip]++
-				}
+				} 
 			}
-
+			m.Scanner[srcip].DestLock.UnLock()
 		}
 	}
 	m[srcip].PckCount++
@@ -87,16 +99,12 @@ func (m ScannerMap) MergeScannerMap(mnew ScannerMap) {
 			for dk, dv := range v.Dest {
 				if _, dexist := m[k].Dest[dk]; !dexist {
 					m[k].Dest[dk] = dv
-				} else {
-					m[k].Dest[dk] += dv
-				}
+				} 
 			}
 			for pk, pv := range v.Port {
 				if _, pexist := m[k].Port[pk]; !pexist {
 					m[k].Port[pk] = pv
-				} else {
-					m[k].Port[pk] += pv
-				}
+				} 
 			}
 		}
 	}
@@ -114,6 +122,17 @@ func (m ScannerMap) OutputJSON(fname string) {
 	} else {
 		outfile.Write(j)
 		log.Println("Output JSON file: ", fname)
+	}
+}
+
+func (m ScannerMap) OutputStat(fname string){
+	outfile, err := os.Create(fname)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer outfile.Close()
+	for k, v := range m.Scanner {
+		outfile.WriteString(k.String() + "," + string(len(v.Dest)) +"," +string(len(v.Port))+"\n")
 	}
 }
 
