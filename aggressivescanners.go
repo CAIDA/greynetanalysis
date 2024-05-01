@@ -58,7 +58,7 @@ func (m ScannerMap) AddScannerProfile(p gopacket.Packet) {
 				m.Scanner[srcip].DestLock.Lock()
 				m.Scanner[srcip].Dest[dstip] = 1
 				m.Scanner[srcip].Port[dstepoint] = 1
-				m.Scanner[srcip].DestLock.UnLock()
+				m.Scanner[srcip].DestLock.Unlock()
 			} else {
 				m.ScannerLock.Unlock()
 				m.Scanner[srcip].DestLock.Lock()
@@ -84,7 +84,7 @@ func (m ScannerMap) AddScannerProfile(p gopacket.Packet) {
 					m.Scanner[srcip].Dest[dstip] = 1
 				}
 			}
-			m.Scanner[srcip].DestLock.UnLock()
+			m.Scanner[srcip].DestLock.Unlock()
 		}
 	}
 	atomic.AddUint32(&m.Scanner[srcip].PckCount, 1)
