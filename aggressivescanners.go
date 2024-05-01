@@ -6,7 +6,6 @@ import (
 	"net/netip"
 	"os"
 	"sort"
-	"sync"
 
 	"github.com/google/gopacket"
 	"gonum.org/v1/gonum/stat"
@@ -20,11 +19,11 @@ type ScannerProfile struct {
 
 type ScannerMap struct {
 	Scanner     map[netip.Addr]*ScannerProfile
-	ScannerLock *sync.RWMutex
+	ScannerChan chan gopacket.Packet
 }
 
 func CreateScannerProfile() ScannerMap {
-	return ScannerMap{Scanner: make(map[netip.Addr]*ScannerProfile), ScannerLock: &sync.RWMutex{}}
+	return ScannerMap{Scanner: make(map[netip.Addr]*ScannerProfile), ScannerChan: make(chan gopacket.Packet, 150)}
 
 }
 
@@ -42,40 +41,40 @@ func ReadScannerProfile(fname string) ScannerMap {
 	return m
 }
 
-func (m ScannerMap) AddScannerProfile(p gopacket.Packet) {
-	dstip, dok := netip.AddrFromSlice(p.NetworkLayer().NetworkFlow().Dst().Raw())
-	srcip, sok := netip.AddrFromSlice(p.NetworkLayer().NetworkFlow().Src().Raw())
+func (m ScannerMap) AddScannerProfile() {
+	for p := range m.ScannerChan {
+		dstip, dok := netip.AddrFromSlice(p.NetworkLayer().NetworkFlow().Dst().Raw())
+		srcip, sok := netip.AddrFromSlice(p.NetworkLayer().NetworkFlow().Src().Raw())
 
-	if dok && sok {
-		if p.TransportLayer() != nil {
-			dstepoint := p.TransportLayer().TransportFlow().EndpointType().String() + ":" + p.TransportLayer().TransportFlow().Dst().String()
-			m.ScannerLock.Lock()
-			if _, exist := m.Scanner[srcip]; !exist {
-				m.Scanner[srcip] = &ScannerProfile{Dest: make(map[netip.Addr]uint8), Port: make(map[string]uint8), PckCount: 1}
-				m.Scanner[srcip].Dest[dstip] = 1
-				m.Scanner[srcip].Port[dstepoint] = 1
-			} else {
-				m.Scanner[srcip].PckCount++
-				if _, sexist := m.Scanner[srcip].Dest[dstip]; !sexist {
+		if dok && sok {
+			if p.TransportLayer() != nil {
+				dstepoint := p.TransportLayer().TransportFlow().EndpointType().String() + ":" + p.TransportLayer().TransportFlow().Dst().String()
+				if _, exist := m.Scanner[srcip]; !exist {
+					m.Scanner[srcip] = &ScannerProfile{Dest: make(map[netip.Addr]uint8), Port: make(map[string]uint8), PckCount: 1}
 					m.Scanner[srcip].Dest[dstip] = 1
-				}
-				if _, pexist := m.Scanner[srcip].Port[dstepoint]; !pexist {
 					m.Scanner[srcip].Port[dstepoint] = 1
+				} else {
+					m.Scanner[srcip].PckCount++
+					if _, sexist := m.Scanner[srcip].Dest[dstip]; !sexist {
+						m.Scanner[srcip].Dest[dstip] = 1
+					}
+					if _, pexist := m.Scanner[srcip].Port[dstepoint]; !pexist {
+						m.Scanner[srcip].Port[dstepoint] = 1
+					}
 				}
-			}
-		} else {
-			m.ScannerLock.Lock()
-			if _, exist := m.Scanner[srcip]; !exist {
-				m.Scanner[srcip] = &ScannerProfile{Dest: make(map[netip.Addr]uint8), Port: make(map[string]uint8), PckCount: 1}
-				m.Scanner[srcip].Dest[dstip] = 1
 			} else {
-				m.Scanner[srcip].PckCount++
-				if _, sexist := m.Scanner[srcip].Dest[dstip]; !sexist {
+
+				if _, exist := m.Scanner[srcip]; !exist {
+					m.Scanner[srcip] = &ScannerProfile{Dest: make(map[netip.Addr]uint8), Port: make(map[string]uint8), PckCount: 1}
 					m.Scanner[srcip].Dest[dstip] = 1
+				} else {
+					m.Scanner[srcip].PckCount++
+					if _, sexist := m.Scanner[srcip].Dest[dstip]; !sexist {
+						m.Scanner[srcip].Dest[dstip] = 1
+					}
 				}
 			}
 		}
-		m.ScannerLock.Unlock()
 	}
 }
 

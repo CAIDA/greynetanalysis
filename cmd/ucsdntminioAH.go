@@ -43,6 +43,11 @@ func main() {
 	workerch := make(chan bool, worker)
 	for cdate := startts; cdate.Before(endts); cdate = cdate.AddDate(0, 0, 1) {
 		dayscmap := greynetanalysis.CreateScannerProfile()
+		wg.Add(1)
+		go func() {
+			greynetanalysis.AddScannerProfile()
+			wg.Done()
+		}()
 		for _, f := range gmio.ListNTpcapsbyDate(cdate) {
 			nameparts := strings.Split(filepath.Base(f), `.`)
 			ts, _ := strconv.ParseInt(nameparts[1], 10, 64)
@@ -60,6 +65,7 @@ func main() {
 				}(f)
 			}
 		}
+		close(dayscmap.ScannerChan)
 		wg.Wait()
 		dayscmap.OutputJSON(filepath.Join(outdir, cdate.Format("2006-01-02")+".daysc.json"))
 		dayscmap.OutputStat(filepath.Join(outdir, cdate.Format("2006-01-02")+".stats.csv"))
@@ -101,7 +107,7 @@ func processAHmiofile(gmio greynetanalysis.GreynetMinio, fpath string, scmap gre
 	for {
 		data, _, err := pcapreader.ReadPacketData()
 		if err == nil {
-			scmap.AddScannerProfile(gopacket.NewPacket(data, layers.LayerTypeEthernet, gopacket.NoCopy))
+			scmap.ScannerChan <- gopacket.NewPacket(data, layers.LayerTypeEthernet, gopacket.Default)
 		} else {
 			break
 		}
